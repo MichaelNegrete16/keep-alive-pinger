@@ -60,14 +60,33 @@ async function pingAll() {
   await Promise.all(urls.map(pingUrl));
 }
 
-// Arranque
+// ---- Arranque ----
+
+// 1) Health server PRIMERO: así Render detecta el puerto enseguida (el servicio
+// pasa a "live" rápido) y el auto-ping ya tiene a quién pegarle cuando corra.
+// Necesario en hosts como Render/Koyeb (esperan que la app escuche un puerto).
+// En tu PC no hace falta, por eso solo arranca si existe la variable PORT.
+if (process.env.PORT) {
+  const PORT = process.env.PORT;
+  const server = http.createServer((req, res) => {
+    res.writeHead(200, { "Content-Type": "text/plain" });
+    res.end("keep-alive-pinger vivo\n");
+  });
+  server.on("error", (err) => {
+    console.log(`[${now()}] Health server no pudo arrancar (${err.code}). Los pings siguen igual.`);
+  });
+  server.listen(PORT, () => console.log(`Health server en puerto ${PORT}`));
+}
+
+// 2) Base de datos. Si falla, no tumbamos el proceso: el auto-ping debe seguir
+// manteniendo el server despierto. pingAll() reintentará leerla cada ronda.
 try {
   await initDb();
 } catch (err) {
-  // No tumbamos el proceso: el auto-ping debe seguir manteniendo el server
-  // despierto aunque la BD esté caída. pingAll() reintentará leerla cada ronda.
   console.log(`[${now()}] Aviso: no se pudo inicializar la BD (${err.message}). Sigo igual.`);
 }
+
+// 3) Loop de pings.
 console.log(`Pinger iniciado. Cada ${intervalMs / 60000} min. Leyendo URLs desde la BD.`);
 if (selfUrl) console.log(`Auto-ping activado hacia: ${selfUrl}`);
 await pingAll();
@@ -80,20 +99,4 @@ for (const sig of ["SIGINT", "SIGTERM"]) {
     await pool.end();
     process.exit(0);
   });
-}
-
-// Mini servidor HTTP: necesario si lo subes a un host como Render/Koyeb
-// (esperan que la app "escuche" un puerto). En tu PC no hace falta, por eso
-// solo arranca si existe la variable de entorno PORT, y si el puerto está
-// ocupado solo avisa: nunca tumba los pings.
-if (process.env.PORT) {
-  const PORT = process.env.PORT;
-  const server = http.createServer((req, res) => {
-    res.writeHead(200, { "Content-Type": "text/plain" });
-    res.end("keep-alive-pinger vivo\n");
-  });
-  server.on("error", (err) => {
-    console.log(`[${now()}] Health server no pudo arrancar (${err.code}). Los pings siguen igual.`);
-  });
-  server.listen(PORT, () => console.log(`Health server en puerto ${PORT}`));
 }
