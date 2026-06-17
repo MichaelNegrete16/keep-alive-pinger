@@ -14,8 +14,12 @@ if (!process.env.DATABASE_URL) {
 const isLocal = process.env.DATABASE_URL.includes("localhost") ||
   process.env.DATABASE_URL.includes("127.0.0.1");
 
+// Quitamos "sslmode" de la URL para evitar un warning ruidoso de pg: el SSL ya
+// lo controlamos explícitamente con la opción "ssl" de abajo.
+const connectionString = process.env.DATABASE_URL.replace(/[?&]sslmode=[^&]*/i, "");
+
 export const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
+  connectionString,
   // Casi todos los Postgres en la nube (Neon, Supabase) exigen SSL.
   ssl: isLocal ? false : { rejectUnauthorized: false },
 });
