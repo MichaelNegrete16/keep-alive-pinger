@@ -1,0 +1,17 @@
+{
+  "name": "keep-alive-pinger",
+  "version": "2.0.0",
+  "description": "Hace ping a una lista de URLs (guardadas en PostgreSQL) cada X minutos para mantenerlas despiertas",
+  "type": "module",
+  "main": "pinger.js",
+  "scripts": {
+    "start": "node --env-file-if-exists=.env pinger.js",
+    "manage": "node --env-file-if-exists=.env manage.js"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "pg": "^8.13.1"
+  }
+}

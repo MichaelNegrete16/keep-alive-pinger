@@ -1,0 +1,15 @@
+# Blueprint de Render. Al conectar el repo, Render lo lee y crea el servicio solo.
+services:
+  - type: web            # web service = único tipo con plan free + url pública
+    name: keep-alive-pinger
+    runtime: node
+    plan: free
+    buildCommand: npm install
+    startCommand: npm start
+    envVars:
+      - key: DATABASE_URL   # secreto: lo pegas tú en el panel de Render
+        sync: false
+      - key: INTERVAL_MINUTES
+        value: "2"
+    # RENDER_EXTERNAL_URL y PORT los inyecta Render automáticamente.
+    # El auto-ping usa RENDER_EXTERNAL_URL solo, no hay que configurarlo.
